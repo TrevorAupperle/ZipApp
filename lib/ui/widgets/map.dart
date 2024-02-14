@@ -99,10 +99,11 @@ class MapSampleState extends State<Map> {
     PermissionStatus permissionGranted;
 
     serviceEnabled = await _locationController.serviceEnabled();
-    if (serviceEnabled) {
+    if (!serviceEnabled) {
       serviceEnabled = await _locationController.requestService();
-    } else {
-      return;
+      if (!serviceEnabled) {
+        return;
+      }
     }
 
     permissionGranted = await _locationController.hasPermission();
