@@ -144,6 +144,7 @@ class _MainScreenState extends State<MainScreen> {
     onBackPress = () {
       Navigator.of(context).maybePop();
     };
+    mapScaffoldKey.currentState?._getUserLocation();
     _checkLegal();
     _retrieveTermsAndConditions();
   }

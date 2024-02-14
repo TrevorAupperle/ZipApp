@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 
 class Map extends StatefulWidget {
   const Map({super.key});
@@ -14,6 +15,9 @@ class MapSampleState extends State<Map> {
   String mapTheme = '';
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
+
+  final Location _locationController = Location();
+  LatLng? userLocation;
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
@@ -34,28 +38,90 @@ class MapSampleState extends State<Map> {
         .then((value) {
       mapTheme = value;
     });
+    _updateUserLocation();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GoogleMap(
-        initialCameraPosition: _kGooglePlex,
-        onMapCreated: (GoogleMapController controller) {
-          controller.setMapStyle(mapTheme);
-          _controller.complete(controller);
-        },
+      body: userLocation == null
+          ? const Center(child: CircularProgressIndicator())
+          : GoogleMap(
+              initialCameraPosition: _kGooglePlex,
+              onMapCreated: (GoogleMapController controller) {
+                controller.setMapStyle(mapTheme);
+                _controller.complete(controller);
+              },
+              markers: {
+                Marker(
+                    markerId: const MarkerId("userLocation"),
+                    position: userLocation!,
+                    infoWindow: const InfoWindow(title: "You are here"))
+              },
+            ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: _goToTheLake,
+              label: const Text('To the lake!'),
+              icon: const Icon(Icons.directions_boat),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: FloatingActionButton(
+                onPressed: _goToMe,
+                child: const Icon(Icons.my_location),
+              ),
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _goToTheLake,
-        label: const Text('To the lake!'),
-        icon: const Icon(Icons.directions_boat),
-      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
     );
   }
 
   Future<void> _goToTheLake() async {
     final GoogleMapController controller = await _controller.future;
     await controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
+  }
+
+  Future<void> _goToMe() async {
+    final GoogleMapController controller = await _controller.future;
+    await controller.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(target: userLocation!, zoom: 14.4746)));
+  }
+
+  Future<void> _updateUserLocation() async {
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+
+    serviceEnabled = await _locationController.serviceEnabled();
+    if (serviceEnabled) {
+      serviceEnabled = await _locationController.requestService();
+    } else {
+      return;
+    }
+
+    permissionGranted = await _locationController.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationController.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    _locationController.onLocationChanged
+        .listen((LocationData currentLocation) {
+      if (currentLocation.longitude != null &&
+          currentLocation.latitude != null) {
+        setState(() {
+          userLocation =
+              LatLng(currentLocation.latitude!, currentLocation.longitude!);
+        });
+      }
+    });
   }
 }

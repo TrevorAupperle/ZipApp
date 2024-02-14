@@ -29,6 +29,10 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
+	<string>NSLocationWhenInUseUsageDescription</string>
+	<key>I want to display location on map and track it.</key>
+	<string>NSLocationAlwaysAndWhenInUseUsageDescription</string>
+	<key>I want to display location on map and track it.</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
